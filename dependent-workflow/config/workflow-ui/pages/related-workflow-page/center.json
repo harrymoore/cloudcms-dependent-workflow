@@ -1,0 +1,6 @@
+{
+    "type": "dependent-content-list",
+    "config": {
+        "chrome": false
+    }
+}

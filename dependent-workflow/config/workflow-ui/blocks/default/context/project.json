@@ -1,0 +1,16 @@
+{
+    "evaluator": "context-document",
+    "config": {
+        "document-subcontext": {
+            "items": [{
+                "key": "document",
+                "items": [{
+                    "key": "document/dependent",
+                    "title": "Dependent Content",
+                    "uri": "{documentUri}/dependent",
+                    "iconClass": "fa fa-chain"   
+                }]
+            }]
+        }
+    }
+}
