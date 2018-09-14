@@ -8,7 +8,7 @@
                     "key": "document/dependent",
                     "title": "Dependent Content",
                     "uri": "{documentUri}/dependent",
-                    "iconClass": "fa fa-chain"   
+                    "iconClass": "fa fa-angle-right"   
                 }]
             }]
         }
