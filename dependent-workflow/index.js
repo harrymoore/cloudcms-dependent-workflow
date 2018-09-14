@@ -1,3 +1,3 @@
 define(function(require) {
-    require("/gadgets/dependent-content-list.js");
+    require("./gadgets/dependent-content-list/dependent-content-list.js");
 });
