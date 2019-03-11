@@ -1,0 +1,8 @@
+Install modules from the Cloud CMS "Manage Platform" / "Modules" page
+
+Module settings:
+ID: dependent-workflow
+Title: Dependent Workflow
+Source Type: GitHub
+Source URL: https://github.com/harrymoore/cloudcms-dependent-workflow
+Path: /dependent-workflow

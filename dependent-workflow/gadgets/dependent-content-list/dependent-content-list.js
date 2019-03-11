@@ -1,100 +1,169 @@
-define(function(require, exports, module) {
+define(function (require, exports, module) {
 
     require("css!./dependent-content-list.css");
-    var html = require("text!./dependent-content-list.html");
 
-    var Empty = require("ratchet/dynamic/empty");
+    var Ratchet = require("ratchet/web");
+    var DocList = require("ratchet/dynamic/doclist");
+    var OneTeam = require("oneteam");
+    var bundle = Ratchet.Messages.using();
 
-    var UI = require("ui");
+    return Ratchet.GadgetRegistry.register("dependent-content-list", DocList.extend({
 
-    return UI.registerGadget("dependent-content-list", Empty.extend({
+        configureDefault: function () {
+            this.base();
 
-        TEMPLATE: html,
-
-        /**
-         * Binds this gadget to the /dependent-content route
-         */
-        setup: function() {
-            this.get("/projects/{projectId}/dependent-content", this.index);
-        },
-
-        /**
-         * Puts variables into the model for rendering within our template.
-         * Once we've finished setting up the model, we must fire callback().
-         *
-         * @param el
-         * @param model
-         * @param callback
-         */
-        prepareModel: function(el, model, callback) {
-
-            // get the current project
-            var project = this.observable("project").get();
-
-            // the current branch
-            var branch = this.observable("branch").get();
-
-            // call into base method and then set up the model
-            this.base(el, model, function() {
-
-                // query for dependent content post instances
-                branch.queryNodes({
-                    "_type": "test:xxxxx", 
-                },{
-                    "limit": -1
-                }).then(function() {
-
-                    model.nodes = this.asArray();
-
-                    callback();
-                });
+            this.config({
+                "observables": {
+                    "query": "document-versions_query",
+                    "sort": "document-versions_sort",
+                    "sortDirection": "document-versions_sortDirection",
+                    "searchTerm": "document-versions_searchTerm",
+                    "selectedItems": "document-versions_selectedItems"
+                }
             });
         },
 
-        /**
-         * This method gets called before the rendered DOM element is injected into the page.
-         *
-         * @param el the dom element
-         * @param model the model used to render the template
-         * @param callback
-         */
-        /*
-        beforeSwap: function(el, model, callback)
-        {
-            this.base(el, model, function() {
-                callback();
-            });
+        setup: function () {
+            this.base();
+
+            // document
+            this.get("/projects/{projectId}/documents/{documentId}/versions", this.index);
+            this.get("/projects/{projectId}/content/{qname}/documents/{documentId}/versions", this.index);
+
+            // tasks
+            this.get("/tasks/{workflowTaskId}/documents/{documentId}/versions", this.index);
+            this.get("/projects/{projectId}/tasks/{workflowTaskId}/documents/{documentId}/versions", this.index);
+
+            // workflows
+            this.get("/workflows/{workflowId}/documents/{documentId}/versions", this.index);
+            this.get("/projects/{projectId}/workflows/{workflowId}/documents/{documentId}/versions", this.index);
         },
-        */
 
-        /**
-         * This method gets called after the rendered DOM element has been injected into the page.
-         *
-         * @param el the new dom element (in page)
-         * @param model the model used to render the template
-         * @param originalContext the dispatch context used to inject
-         * @param callback
-         */
-        afterSwap: function(el, model, originalContext, callback)
-        {
-            this.base(el, model, originalContext, function() {
+        entityTypes: function () {
+            return {
+                "plural": "versions",
+                "singular": "version"
+            }
+        },
 
-                // find all .media-popups and attach to a lightbox
-                $(el).find(".media-popup").click(function(e) {
+        getDefaultSortField: function (model) {
+            return "_system.created_on.ms";
+        },
 
-                    e.preventDefault();
+        prepareModel: function (el, model, callback) {
+            var self = this;
 
-                    var nodeIndex = $(this).attr("data-media-index");
-                    var node = model.nodes[nodeIndex];
+            this.base(el, model, function () {
 
-                    UI.showPopupModal({
-                        "title": "Viewing: " + node.title,
-                        "body": "<div style='text-align:center'><img src='" + node._doc + "'></div>"
-                    });
-                });
+                model.options.defaultSortDirection = -1;
+
+                model.isOwner = self.observable("isOwner").get();
+                model.isManager = self.observable("isManager").get();
+
+                model.showChangesetLink = model.isOwner || model.isManager;
 
                 callback();
+
             });
+        },
+
+        doclistDefaultConfig: function () {
+            var config = this.base();
+            config.columns = [];
+
+            return config;
+        },
+
+        doGitanaQuery: function (context, model, searchTerm, query, pagination, callback) {
+            var self = this;
+
+            var document = self.observable("document").get();
+            Chain(document).listVersions(pagination).each(function () {
+                this.ref = null;
+            }).then(function () {
+                callback(this);
+            });
+        },
+
+        iconClass: function (row) {
+            return null;
+        },
+
+        linkUri: function (row, model, context) {
+            var uri = null;
+
+            if (row.isContainer()) {
+                // folder
+                uri = OneTeam.linkUri(this, row, "browse");
+            } else {
+                // file
+                uri = OneTeam.linkUri(this, row);
+            }
+
+            return uri;
+        },
+
+        iconUri: function (row, model, context) {
+            return OneTeam.iconUriForNode(row);
+        },
+
+        columnValue: function (row, item, model, context) {
+            var self = this;
+
+            var project = self.observable("project").get();
+
+            var value = this.base(row, item);
+
+            if (item.key === "changeset") {
+                var repositoryId = row.getRepositoryId();
+                var changesetId = row.getSystemMetadata()["changeset"];
+
+                value = "";
+
+                if (model.showChangesetLink) {
+                    value = "<a href='/admin/#/repositories/" + repositoryId + "/changesets/" + changesetId + "' target='_blank'>";
+                }
+
+                value += row.getSystemMetadata()["changeset"];
+
+                if (model.showChangesetLink) {
+                    value += "</a>";
+                }
+            }
+
+            if (item.key === "date") {
+                var date = new Date(row.getSystemMetadata().modified_on.ms);
+                value = "<p class='list-row-info modified'>Modified " + bundle.relativeDate(date);
+                if (row.getSystemMetadata().modified_by) {
+                    var modifiedByLink = "";
+                    if (row.getSystemMetadata().modified_by !== "system" && row.getSystemMetadata().modified_by !== "admin") {
+                        modifiedByLink += "<a href='#/projects/" + project.getId() + "/members/" + row.getSystemMetadata().modified_by_principal_id + "'>";
+                    }
+                    modifiedByLink += row.getSystemMetadata().modified_by;
+                    if (row.getSystemMetadata().modified_by !== "system" && row.getSystemMetadata().modified_by !== "admin") {
+                        modifiedByLink += "</a>";
+                    }
+                    value += " by " + modifiedByLink + "</p>";
+                }
+            }
+
+            if (item.key === "activity") {
+                var activity = "Updated";
+
+                var previousChangesetId = row.getSystemMetadata()["previousChangeset"];
+                if (!previousChangesetId) {
+                    activity = "Created";
+                }
+
+                var deleted = row.getSystemMetadata()["deleted"];
+                if (deleted) {
+                    activity = "Deleted";
+                }
+
+                value = activity;
+            }
+
+            return value;
         }
 
     }));
