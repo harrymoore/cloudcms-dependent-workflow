@@ -1,8 +1,9 @@
 {
-    "title": "Related Content Workflow",
+    "title": "{{{title document}}} Related Content",
     "uri": [
-        "/projects/{projectId}/documents/{documentId}/dependent"
+        "/projects/{projectId}/documents/{documentId}/dependent",
+        "/projects/{projectId}/content/{qname}/documents/{documentId}/dependent"
     ],
     "extends": "project/document/_document",
-    "template": "dependent-content-list-template"
+    "template": "document-selected"
 }

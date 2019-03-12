@@ -1,6 +1,57 @@
 {
     "type": "dependent-content-list",
     "config": {
-        "chrome": false
+        "chrome": false,
+        "buttons": [],
+        "columns": [{
+            "key": "changeset",
+            "title": "Changeset"
+        }, {
+            "key": "date",
+            "title": "Date Modified"
+        }, {
+            "key": "activity",
+            "title": "Activity"
+        }],
+        "options": {
+            "filter": false
+        },
+        "icon": false,
+        "checkbox": true,
+        "loader": "gitana",
+        "selectorGroups": {
+            "multi-documents-action-selector-group": {
+                "actions": [{
+                    "key": "view-document-version",
+                    "title": "View Version",
+                    "iconClass": "fa fa-external-link",
+                    "align": "left",
+                    "action": "view-document-version"
+                }, {
+                    "key": "restore-document-version",
+                    "title": "Revert to Version",
+                    "iconClass": "fa fa-arrow-circle-left",
+                    "align": "left",
+                    "action": "restore-document-version"
+                }, {
+                    "key": "compare-document-versions",
+                    "title": "Compare Versions",
+                    "iconClass": "fa fa-object-ungroup",
+                    "align": "left",
+                    "action": "compare-document-versions"
+                }]
+            },
+            "sort-selector-group": {
+                "fields": [{
+                    "key": "changeset",
+                    "title": "Changeset",
+                    "field": "_system.changeset"
+                }, {
+                    "key": "date",
+                    "title": "Date",
+                    "field": "_system.created_on.ms"
+                }]
+            }
+        }
     }
 }
