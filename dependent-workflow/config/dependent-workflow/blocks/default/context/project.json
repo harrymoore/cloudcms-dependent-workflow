@@ -6,7 +6,7 @@
                 "key": "document",
                 "items": [{
                     "key": "document/dependent",
-                    "title": "Related Content",
+                    "title": "Related Content List",
                     "uri": "{documentUri}/dependent",
                     "iconClass": "fa fa-angle-right"   
                 }]

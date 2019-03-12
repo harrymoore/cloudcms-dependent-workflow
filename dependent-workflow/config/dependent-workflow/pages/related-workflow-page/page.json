@@ -1,5 +1,5 @@
 {
-    "title": "{{{title document}}} Related Content",
+    "title": "{{{title document}}} - Related Content",
     "uri": [
         "/projects/{projectId}/documents/{documentId}/dependent",
         "/projects/{projectId}/content/{qname}/documents/{documentId}/dependent"
