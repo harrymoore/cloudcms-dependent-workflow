@@ -5,5 +5,5 @@
         "/projects/{projectId}/content/{qname}/documents/{documentId}/dependent"
     ],
     "extends": "project/document/_document",
-    "template": "document-selected"
+    "template": "default"
 }
