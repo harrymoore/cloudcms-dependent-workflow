@@ -1,0 +1,23 @@
+{
+  "name": "workflow-ui",
+  "version": "1.0.0",
+  "description": "Install modules from the Cloud CMS \"Manage Platform\" / \"Modules\" page",
+  "main": "",
+  "dependencies": {},
+  "devDependencies": {
+    "gulp": "^4.0.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/harrymoore/cloudcms-dependent-workflow.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/harrymoore/cloudcms-dependent-workflow/issues"
+  },
+  "homepage": "https://github.com/harrymoore/cloudcms-dependent-workflow#readme"
+}

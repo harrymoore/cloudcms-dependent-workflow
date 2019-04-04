@@ -5,7 +5,6 @@ define(function (require, exports, module) {
     var Ratchet = require("ratchet/web");
     var DocList = require("ratchet/dynamic/doclist");
     var OneTeam = require("oneteam");
-    var bundle = Ratchet.Messages.using();
 
     return Ratchet.GadgetRegistry.register("dependent-content-list", DocList.extend({
 
@@ -14,11 +13,11 @@ define(function (require, exports, module) {
 
             this.config({
                 "observables": {
-                    "query": "document-versions_query",
-                    "sort": "document-versions_sort",
-                    "sortDirection": "document-versions_sortDirection",
-                    "searchTerm": "document-versions_searchTerm",
-                    "selectedItems": "document-versions_selectedItems"
+                    "query": "document-associations_query",
+                    "sort": "document-associations_sort",
+                    "sortDirection": "document-associations_sortDirection",
+                    "searchTerm": "document-associations_searchTerm",
+                    "selectedItems": "document-associations_selectedItems"
                 }
             });
         },
@@ -27,42 +26,57 @@ define(function (require, exports, module) {
             this.base();
 
             // document
-            this.get("/projects/{projectId}/documents/{documentId}/versions", this.index);
-            this.get("/projects/{projectId}/content/{qname}/documents/{documentId}/versions", this.index);
-
-            // tasks
-            this.get("/tasks/{workflowTaskId}/documents/{documentId}/versions", this.index);
-            this.get("/projects/{projectId}/tasks/{workflowTaskId}/documents/{documentId}/versions", this.index);
-
-            // workflows
-            this.get("/workflows/{workflowId}/documents/{documentId}/versions", this.index);
-            this.get("/projects/{projectId}/workflows/{workflowId}/documents/{documentId}/versions", this.index);
+            this.get("/projects/{projectId}/documents/{documentId}/dependent", this.index);
+            this.get("/projects/{projectId}/content/{qname}/documents/{documentId}/dependent", this.index);
         },
 
-        entityTypes: function () {
-            return {
-                "plural": "versions",
-                "singular": "version"
-            }
-        },
+        // _findIds: function (rootObj, arr = []) {
+        //     var self = this;
+        //     if (rootObj && rootObj._qname) console.log(rootObj._qname);
 
-        getDefaultSortField: function (model) {
-            return "_system.created_on.ms";
-        },
+        //     Object.keys(rootObj || {}).forEach(k => {
+        //         if (k === 'ref') {
+        //             if (rootObj.id) {
+        //                 arr.push(rootObj.id);
+        //             }
+        //         }
+        //         if (typeof rootObj[k] === 'object') {
+        //             self._findIds(rootObj[k], arr);
+        //         }
+        //     });
+        //     return arr;
+        // },
 
         prepareModel: function (el, model, callback) {
             var self = this;
+            var document = self.observable("document").get();
+            var branch = self.observable("branch").get();
+
+            // model.relatedIds = self._findIds(JSON.parse(JSON.stringify(document)), []);
 
             this.base(el, model, function () {
-
-                model.options.defaultSortDirection = -1;
-
-                model.isOwner = self.observable("isOwner").get();
-                model.isManager = self.observable("isManager").get();
-
-                model.showChangesetLink = model.isOwner || model.isManager;
-
-                callback();
+                OneTeam.projectDefinitions(self, function (definitions) {
+                    query = {
+                        _type: "d:association",
+                        "$or": [{
+                            _qname: "a:linked"
+                        },{
+                            systemBootstrapped: { 
+                                $exists: false 
+                            }
+                        }],
+                        _fields: {
+                            _qname: 1,
+                            title: 1,
+                            description: 1
+                        }
+                    };
+        
+                    Chain(branch).queryNodes(query).then(function(){
+                        model.definitions = this.asArray();
+                        callback();
+                    });
+                });
 
             });
         },
@@ -76,18 +90,74 @@ define(function (require, exports, module) {
 
         doGitanaQuery: function (context, model, searchTerm, query, pagination, callback) {
             var self = this;
-
             var document = self.observable("document").get();
-            Chain(document).listVersions(pagination).each(function () {
-                this.ref = null;
+            var repository = self.observable("repository").get();
+            var otherDocIds = [];
+            var amap = {};
+            var associations = null;
+        
+            Chain(document).associations({direction: 'OUTGOING'}, {limit: 100}).each(function() {
+                var otherDocId = this.getOtherNodeId(document._doc);
+
+                otherDocIds.push(otherDocId);
+                if (!amap[otherDocId]) {
+                    amap[otherDocId] = [];
+                }
+                amap[otherDocId].push(this.getId());
             }).then(function () {
-                callback(this);
+                associations = this;
+
+                var query = {
+                    "_doc": {
+                        "$in": otherDocIds
+                    }
+                };
+
+                Chain(document.getBranch()).queryNodes(query, {
+                    "limit": 100
+                }).each(function () {
+                    var associationIds = amap[this.getId()];
+
+                    for (var i = 0; i < associationIds.length; i++) {
+                        associations[associationIds[i]].node = this;
+                    }
+                }).then(function () {
+                    Chain(repository).readBranch("master").then(function() {
+                        var master = this;
+
+                        Chain(master).queryNodes(query, {
+                            "limit": 100
+                        }).then(function () {
+                            var masterNodes = this.asArray();
+                            console.log(JSON.stringify(masterNodes, null, 4));
+
+                            // for (var i = 0; i<masterNodes.length; i++) {
+                            //     var 
+                            // }
+
+                            callback(associations);
+                        });
+                    });
+                });
             });
         },
 
-        iconClass: function (row) {
-            return null;
-        },
+        // iconClass: function (row) {
+        //     var self = this;
+
+        //     var document = self.observable("document").get();
+        //     var cssClass = "association-mutual-icon-64";
+
+        //     if (row.directionality === "DIRECTED") {
+        //         if (row.source === document._doc) {
+        //             cssClass = "association-outgoing-icon-64";
+        //         } else if (row.target === document._doc) {
+        //             cssClass = "association-incoming-icon-64";
+        //         }
+        //     }
+
+        //     return cssClass;
+        // },
 
         linkUri: function (row, model, context) {
             var uri = null;
@@ -104,7 +174,7 @@ define(function (require, exports, module) {
         },
 
         iconUri: function (row, model, context) {
-            return OneTeam.iconUriForNode(row);
+            return null;
         },
 
         columnValue: function (row, item, model, context) {
@@ -114,53 +184,75 @@ define(function (require, exports, module) {
 
             var value = this.base(row, item);
 
-            if (item.key === "changeset") {
-                var repositoryId = row.getRepositoryId();
-                var changesetId = row.getSystemMetadata()["changeset"];
+            if (item.key === "document") {
+                if (row.node) {
+                    // var definition = model.definitions[row.node.getTypeQName()];
+                    // var summary = OneTeam.buildNodeSummary(row.node, definition, project);
 
-                value = "";
-
-                if (model.showChangesetLink) {
-                    value = "<a href='/admin/#/repositories/" + repositoryId + "/changesets/" + changesetId + "' target='_blank'>";
+                    // value = OneTeam.listTitleDescription(context, row.node, self.linkUri(row.node, model, context), null, false, summary);
+                    value = "";
+                    value += "<h2 class='list-row-info title'>";
+                    value += row.node.title;
+                    value += "</h2>";
+                } else {
+                    value = "";
+                    value += "<h2 class='list-row-info title'>";
+                    value += "Unknown Document";
+                    value += "</h2>";
                 }
-
-                value += row.getSystemMetadata()["changeset"];
-
-                if (model.showChangesetLink) {
-                    value += "</a>";
-                }
-            }
-
-            if (item.key === "date") {
-                var date = new Date(row.getSystemMetadata().modified_on.ms);
-                value = "<p class='list-row-info modified'>Modified " + bundle.relativeDate(date);
-                if (row.getSystemMetadata().modified_by) {
-                    var modifiedByLink = "";
-                    if (row.getSystemMetadata().modified_by !== "system" && row.getSystemMetadata().modified_by !== "admin") {
-                        modifiedByLink += "<a href='#/projects/" + project.getId() + "/members/" + row.getSystemMetadata().modified_by_principal_id + "'>";
+            } else if (item.key == "association") {
+                var direction = null;
+                if (row.directionality == "DIRECTED") {
+                    //if (row.source === row._doc)
+                    if (row.target === row.node._doc) {
+                        direction = "Outgoing";
+                    } else {
+                        direction = "Incoming";
                     }
-                    modifiedByLink += row.getSystemMetadata().modified_by;
-                    if (row.getSystemMetadata().modified_by !== "system" && row.getSystemMetadata().modified_by !== "admin") {
-                        modifiedByLink += "</a>";
+                } else {
+                    direction = "Both Directions";
+                }
+
+                var summary = "";
+                summary += "<p class='list-row-info summary'>";
+                summary += "Type: <a href='/#/projects/" + project._doc + "/model/associations/" + row.getTypeQName() + "'>" + row.getTypeQName() + "</a>";
+                summary += "<br/>";
+                summary += "Direction: " + direction;
+                if (row.getTypeQName() === "a:has_role") {
+                    summary += "<br/>";
+                    summary += "Role: " + row["role-key"];
+                }
+                if (typeof (row.order) !== "undefined") {
+                    summary += "<br/>";
+                    summary += "Order: " + row["order"];
+                }
+
+                var relatorConfig = row.getFeature("f:relator");
+                if (relatorConfig) {
+                    var propertyHolder = relatorConfig.propertyHolder;
+                    var propertyPath = relatorConfig.propertyPath;
+
+                    if (propertyHolder === "source") {
+                        summary += "<br/>";
+                        summary += "Map from Source: " + propertyPath;
+                    } else if (propertyHolder === "target") {
+                        summary += "<br/>";
+                        summary += "Map from Target: " + propertyPath;
                     }
-                    value += " by " + modifiedByLink + "</p>";
-                }
-            }
-
-            if (item.key === "activity") {
-                var activity = "Updated";
-
-                var previousChangesetId = row.getSystemMetadata()["previousChangeset"];
-                if (!previousChangesetId) {
-                    activity = "Created";
                 }
 
-                var deleted = row.getSystemMetadata()["deleted"];
-                if (deleted) {
-                    activity = "Deleted";
+                summary += "</p>";
+
+                var title = row.getTypeQName();
+
+                var definition = model.definitions[row.getTypeQName()];
+                if (definition) {
+                    title = definition.title;
                 }
 
-                value = activity;
+                value = OneTeam.listTitleDescription(context, row, self.linkUri(row, model, context), title, true, summary);
+            } else if (item.key === "direction") {
+                value = row.directionality;
             }
 
             return value;

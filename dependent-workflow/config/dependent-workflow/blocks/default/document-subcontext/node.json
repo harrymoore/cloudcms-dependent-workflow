@@ -1,14 +1,16 @@
 {
-    "evaluator": "context-document",
+    "evaluator": "context-document-is-node",
     "config": {
         "document-subcontext": {
             "items": [{
                 "key": "document",
                 "items": [{
                     "key": "document/dependent",
-                    "title": "Related Content List",
+                    "title": "Dependent Content",
                     "uri": "{documentUri}/dependent",
-                    "iconClass": "fa fa-angle-right"   
+                    "allowPermission": [
+                        "read"
+                    ]
                 }]
             }]
         }

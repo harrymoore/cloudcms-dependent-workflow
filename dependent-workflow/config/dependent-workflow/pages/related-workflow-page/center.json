@@ -2,54 +2,68 @@
     "type": "dependent-content-list",
     "config": {
         "chrome": false,
-        "buttons": [],
-        "columns": [{
-            "key": "changeset",
-            "title": "Changeset"
-        }, {
-            "key": "date",
-            "title": "Date Modified"
-        }, {
-            "key": "activity",
-            "title": "Activity"
+        "buttons": [{
+            "key": "add-association",
+            "title": "Add Association",
+            "iconClass": "fa fa-plus",
+            "align": "left",
+            "action": "add-association",
+            "allowPermission": [
+                "create_subobjects"
+            ]
         }],
         "options": {
             "filter": false
         },
-        "icon": false,
+        "columns": [{
+            "title": "Document",
+            "key": "document"
+        }, {
+            "title": "Association",
+            "key": "association"
+        }],
+        "icon": true,
         "checkbox": true,
         "loader": "gitana",
         "selectorGroups": {
             "multi-documents-action-selector-group": {
                 "actions": [{
-                    "key": "view-document-version",
-                    "title": "View Version",
-                    "iconClass": "fa fa-external-link",
-                    "align": "left",
-                    "action": "view-document-version"
-                }, {
-                    "key": "restore-document-version",
-                    "title": "Revert to Version",
-                    "iconClass": "fa fa-arrow-circle-left",
-                    "align": "left",
-                    "action": "restore-document-version"
-                }, {
-                    "key": "compare-document-versions",
-                    "title": "Compare Versions",
-                    "iconClass": "fa fa-object-ungroup",
-                    "align": "left",
-                    "action": "compare-document-versions"
+                    "action": "delete-associations",
+                    "order": 100,
+                    "allowPermission": [
+                        "delete"
+                    ]
                 }]
             },
             "sort-selector-group": {
                 "fields": [{
-                    "key": "changeset",
-                    "title": "Changeset",
-                    "field": "_system.changeset"
+                    "key": "type",
+                    "title": "Association Type",
+                    "field": "_type"
                 }, {
-                    "key": "date",
-                    "title": "Date",
+                    "key": "directionality",
+                    "title": "Direction",
+                    "field": "directionality"
+                }, {
+                    "key": "createdOn",
+                    "title": "Created On",
                     "field": "_system.created_on.ms"
+                }, {
+                    "key": "createdBy",
+                    "title": "Created By",
+                    "field": "_system.created_by"
+                }, {
+                    "key": "modifiedOn",
+                    "title": "Modified On",
+                    "field": "_system.modified_on.ms"
+                }, {
+                    "key": "modifiedBy",
+                    "title": "Modified By",
+                    "field": "_system.modified_by"
+                }, {
+                    "key": "order",
+                    "title": "Order",
+                    "field": "order"
                 }]
             }
         }
