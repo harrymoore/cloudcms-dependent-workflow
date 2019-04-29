@@ -96,7 +96,7 @@ define(function (require, exports, module) {
             var amap = {};
             var associations = null;
         
-            Chain(document).associations({direction: 'OUTGOING'}, {limit: 100}).each(function() {
+            Chain(document).associations({direction: 'OUTGOING'}, {limit: 1000}).each(function() {
                 var otherDocId = this.getOtherNodeId(document._doc);
 
                 otherDocIds.push(otherDocId);
@@ -114,7 +114,7 @@ define(function (require, exports, module) {
                 };
 
                 Chain(document.getBranch()).queryNodes(query, {
-                    "limit": 100
+                    "limit": 1000
                 }).each(function () {
                     var associationIds = amap[this.getId()];
 
@@ -126,7 +126,7 @@ define(function (require, exports, module) {
                         var master = this;
 
                         Chain(master).queryNodes(query, {
-                            "limit": 100
+                            "limit": 1000
                         }).then(function () {
                             var masterNodes = this.asArray();
                             console.log(JSON.stringify(masterNodes, null, 4));
